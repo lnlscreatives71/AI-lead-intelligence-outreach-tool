@@ -2,33 +2,32 @@ import React, { useState, useEffect } from 'react';
 import { 
   Search, Settings, History, LayoutDashboard, Globe, 
   BarChart, Share2, Star, Cpu, Crosshair, Target, 
-  Mail, Download, Database, CheckCircle, ChevronRight, Loader2
+  Mail, Download, Database, ChevronRight, Loader2, Zap, Terminal
 } from 'lucide-react';
 
-// --- CONFIGURATION & THEME ---
+// --- CYBERPUNK THEME COLORS ---
 const THEME = {
-  navy: '#0a1128',
-  navyLight: '#162447',
-  gold: '#D4AF37',
-  goldLight: '#F3E5AB',
-  white: '#FFFFFF',
-  red: '#EF4444',
-  yellow: '#F59E0B',
-  green: '#10B981'
+  cyan: '#00f3ff',
+  cyanGlow: 'rgba(0, 243, 255, 0.5)',
+  purple: '#b026ff',
+  purpleGlow: 'rgba(176, 38, 255, 0.4)',
+  green: '#39ff14',
+  red: '#ff003c',
+  yellow: '#ffea00',
+  black: '#000000',
+  glassBg: 'rgba(10, 15, 25, 0.65)',
+  glassBorder: 'rgba(0, 243, 255, 0.15)'
 };
 
-// --- MAIN APP COMPONENT ---
 export default function ScoutApp() {
-  const[activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [reportTab, setReportTab] = useState('overview');
   const [showSettings, setShowSettings] = useState(false);
 
-  // API Keys with Vercel Environment Variables + LocalStorage Persistence
+  // API Keys
   const [apiKeys, setApiKeys] = useState(() => {
     const saved = localStorage.getItem('scoutApiKeys');
     if (saved) return JSON.parse(saved);
-    
-    // Pulls seamlessly from Vercel Environment Variables!
     return { 
       anthropic: import.meta.env.VITE_ANTHROPIC_API_KEY || '', 
       serper: import.meta.env.VITE_SERPER_API_KEY || '', 
@@ -42,105 +41,88 @@ export default function ScoutApp() {
 
   // Lead State
   const [leadForm, setLeadForm] = useState({ name: '', location: '', website: '', industry: 'Real Estate' });
-  const[isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [loadingStep, setLoadingStep] = useState('');
   
   // Data State
   const [reportData, setReportData] = useState(null);
-  const[emailScripts, setEmailScripts] = useState({ hook: '', followup: '', close: '' });
+  const [emailScripts, setEmailScripts] = useState({ hook: '', followup: '', close: '' });
 
   // --- API ORCHESTRATION ---
   const handleAnalyze = async (e) => {
     e.preventDefault();
     if (!apiKeys.anthropic || !apiKeys.serper) {
-      alert("Please configure Anthropic and Serper API keys in Settings (or via Vercel Environment Variables).");
+      alert("SYSTEM ERROR: API Auth Tokens Missing. Configure in Settings.");
       return;
     }
-
     setIsAnalyzing(true);
     setReportData(null);
-
     try {
-      // Step 1: Serper Web Search
-      setLoadingStep('Gathering live web data via Serper API...');
+      setLoadingStep('INITIALIZING LIVE WEB SCRAPE [SERPER]...');
       const serperData = await fetchSerperData(leadForm.name, leadForm.location);
-
-      // Step 2: Anthropic Analysis
-      setLoadingStep('Analyzing data & generating insights with Claude...');
+      
+      setLoadingStep('PROCESSING NEURAL ANALYSIS [CLAUDE]...');
       const aiAnalysis = await fetchAnthropicAnalysis(leadForm, serperData, apiKeys.anthropic);
-
-      // Step 3: Apply Offer Logic
-      setLoadingStep('Generating tailored outreach & offers...');
+      
+      setLoadingStep('GENERATING TACTICAL OUTREACH VECTORS...');
       const finalOffer = determineFreeOffer(aiAnalysis.scores);
       
       setReportData({ ...aiAnalysis, finalOffer });
-      setEmailScripts({
-        hook: aiAnalysis.emails.hook,
-        followup: aiAnalysis.emails.followup,
-        close: aiAnalysis.emails.close
-      });
-
+      setEmailScripts({ hook: aiAnalysis.emails.hook, followup: aiAnalysis.emails.followup, close: aiAnalysis.emails.close });
       setActiveTab('report');
     } catch (error) {
-      console.error(error);
-      alert("Analysis failed. Check console for details.");
+      alert("CRITICAL ERROR: Neural link severed. Check API keys.");
     } finally {
       setIsAnalyzing(false);
       setLoadingStep('');
     }
   };
 
-  // --- BUSINESS LOGIC: FREE OFFER ENGINE ---
   const determineFreeOffer = (scores) => {
-    if (scores.socialMedia < 4) return "2 Weeks of Branded Social Media Content";
-    if (scores.website < 4) return "Free Custom Demo Website";
-    if (scores.automation > 7) return "14-Day Free Autonomous AI Assistant Trial";
-    if (scores.reputation < 5) return "Free Google Business Profile Audit & Optimization";
-    return "Complimentary AI Strategy Session"; // Fallback
+    if (scores.socialMedia < 4) return "2-Week Branded Social Matrix Content";
+    if (scores.website < 4) return "Custom Neural-Net Demo Website";
+    if (scores.automation > 7) return "14-Day Autonomous AI Agent Trial";
+    if (scores.reputation < 5) return "Deep-Dive GBP Algorithm Audit";
+    return "Complimentary Tech-Stack Strategy Session"; 
   };
 
-  // --- EXPORT & INTEGRATIONS ---
   const exportToPDF = () => {
     import('html2pdf.js').then((html2pdf) => {
       const element = document.getElementById('report-content');
       const opt = {
-        margin: 1,
-        filename: `${leadForm.name}-Intelligence-Report.pdf`,
+        margin: 0.5,
+        filename: `${leadForm.name}-Target-Profile.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
         jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
       };
-      html2pdf.default().set(opt).from(element).save();
+      // Temporarily remove dark mode for PDF print readability
+      element.classList.add('print-mode-active');
+      html2pdf.default().set(opt).from(element).save().then(() => {
+        element.classList.remove('print-mode-active');
+      });
     });
   };
 
   const pushToHubSpot = async () => {
-    if (!apiKeys.hubspot) return alert("Please add your HubSpot API key in settings or Vercel Env Variables.");
+    if (!apiKeys.hubspot) return alert("SYSTEM ERROR: HubSpot uplink missing.");
     try {
-      // HubSpot CRM API Mock
       const response = await fetch('https://api.hubapi.com/crm/v3/objects/contacts', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKeys.hubspot}`,
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Authorization': `Bearer ${apiKeys.hubspot}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           properties: {
-            company: leadForm.name,
-            city: leadForm.location,
-            website: leadForm.website,
-            industry: leadForm.industry,
+            company: leadForm.name, city: leadForm.location, website: leadForm.website, industry: leadForm.industry,
             deal_tags: reportData.recommendations.map(r => r.service).join(', '),
-            notes: `Outreach Sequence Generated:\n\nEmail 1:\n${emailScripts.hook}`
+            notes: `OUTREACH PROTOCOL INITIALIZED:\n\n${emailScripts.hook}`
           }
         })
       });
-      if(response.ok) alert("Successfully pushed to HubSpot!");
-      else alert("HubSpot Push Failed: Check API Key");
-    } catch(err) { alert("HubSpot API Error"); }
+      if(response.ok) alert("UPLINK SUCCESSFUL: Target acquired in CRM.");
+      else alert("UPLINK FAILED: Invalid Auth Token.");
+    } catch(err) { alert("UPLINK FAILED: Network error."); }
   };
 
-  // --- UI RENDERERS ---
   const getScoreColor = (score) => {
     if (score < 4) return THEME.red;
     if (score < 8) return THEME.yellow;
@@ -148,69 +130,73 @@ export default function ScoutApp() {
   };
 
   return (
-    <div className="flex h-screen bg-[#0a1128] text-white font-sans overflow-hidden">
+    <div className="flex h-screen bg-black text-gray-200 font-sans overflow-hidden relative selection:bg-[#b026ff] selection:text-white">
       
-      {/* SIDEBAR */}
-      <div className="w-64 bg-[#162447] border-r border-[#D4AF37]/20 flex flex-col">
-        <div className="p-6 border-b border-[#D4AF37]/20">
-          <h1 className="text-2xl font-bold tracking-wider" style={{ color: THEME.gold }}>SCOUT</h1>
-          <p className="text-xs text-gray-400 mt-1 uppercase tracking-widest">LNL AI Agency</p>
+      {/* --- AMBIENT CYBERPUNK GLOWS & GRID --- */}
+      <div className="absolute inset-0 z-0 bg-[linear-gradient(to_right,#00f3ff10_1px,transparent_1px),linear-gradient(to_bottom,#00f3ff10_1px,transparent_1px)] bg-[size:3rem_3rem] opacity-20 pointer-events-none"></div>
+      <div className="absolute top-[-20%] left-[-10%] w-[50vw] h-[50vw] bg-[#b026ff] rounded-full mix-blend-screen filter blur-[200px] opacity-15 pointer-events-none animate-pulse"></div>
+      <div className="absolute bottom-[-20%] right-[-10%] w-[40vw] h-[40vw] bg-[#00f3ff] rounded-full mix-blend-screen filter blur-[150px] opacity-15 pointer-events-none"></div>
+
+      {/* --- SIDEBAR (GLASSMORPHISM) --- */}
+      <div className="relative z-10 w-72 bg-black/40 backdrop-blur-2xl border-r border-[#00f3ff]/20 flex flex-col shadow-[4px_0_24px_rgba(0,243,255,0.05)]">
+        <div className="p-8 border-b border-[#00f3ff]/20">
+          <div className="flex items-center space-x-3">
+            <Zap size={28} className="text-[#00f3ff] animate-pulse" />
+            <h1 className="text-3xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-[#00f3ff] to-[#b026ff]">SCOUT</h1>
+          </div>
+          <p className="text-[10px] font-mono text-[#00f3ff]/70 mt-2 uppercase tracking-[0.3em]">LNL AI Core // v2.4.0</p>
         </div>
-        <nav className="flex-1 p-4 space-y-2">
-          <SidebarBtn icon={LayoutDashboard} label="Dashboard" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
-          <SidebarBtn icon={Target} label="Intelligence Report" active={activeTab === 'report'} onClick={() => setActiveTab('report')} disabled={!reportData} />
-          <SidebarBtn icon={History} label="History" active={activeTab === 'history'} onClick={() => setActiveTab('history')} />
+        <nav className="flex-1 p-6 space-y-4">
+          <SidebarBtn icon={LayoutDashboard} label="MAIN CONSOLE" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
+          <SidebarBtn icon={Target} label="TARGET INTEL" active={activeTab === 'report'} onClick={() => setActiveTab('report')} disabled={!reportData} />
+          <SidebarBtn icon={Terminal} label="LOG HISTORY" active={activeTab === 'history'} onClick={() => setActiveTab('history')} />
         </nav>
-        <div className="p-4 border-t border-[#D4AF37]/20">
-          <button onClick={() => setShowSettings(true)} className="flex items-center space-x-3 text-gray-400 hover:text-white transition-colors">
-            <Settings size={18} /><span>Settings & API</span>
+        <div className="p-6 border-t border-[#00f3ff]/20">
+          <button onClick={() => setShowSettings(true)} className="flex items-center space-x-3 font-mono text-sm text-gray-500 hover:text-[#00f3ff] transition-all hover:drop-shadow-[0_0_8px_#00f3ff]">
+            <Settings size={18} /><span>SYS_CONFIG</span>
           </button>
         </div>
       </div>
 
-      {/* MAIN CONTENT */}
-      <div className="flex-1 flex flex-col overflow-y-auto relative">
-        {/* Settings Modal */}
+      {/* --- MAIN CONTENT AREA --- */}
+      <div className="flex-1 flex flex-col overflow-y-auto relative z-10">
+        
+        {/* Settings Modal (Cyber-terminal style) */}
         {showSettings && (
-          <div className="absolute inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-            <div className="bg-[#162447] border border-[#D4AF37] rounded-xl p-6 w-full max-w-md">
-              <h2 className="text-xl font-bold mb-4" style={{ color: THEME.gold }}>API Configurations</h2>
-              <p className="text-xs text-gray-400 mb-4">Keys pulled from Vercel Env Variables are active. You can override them here temporarily.</p>
-              <div className="space-y-4">
-                <input type="password" placeholder="Anthropic API Key" className="w-full bg-[#0a1128] border border-gray-700 rounded p-2 text-white focus:border-[#D4AF37] outline-none" value={apiKeys.anthropic} onChange={e => setApiKeys({...apiKeys, anthropic: e.target.value})} />
-                <input type="password" placeholder="Serper.dev API Key" className="w-full bg-[#0a1128] border border-gray-700 rounded p-2 text-white focus:border-[#D4AF37] outline-none" value={apiKeys.serper} onChange={e => setApiKeys({...apiKeys, serper: e.target.value})} />
-                <input type="password" placeholder="HubSpot API Key (Optional)" className="w-full bg-[#0a1128] border border-gray-700 rounded p-2 text-white focus:border-[#D4AF37] outline-none" value={apiKeys.hubspot} onChange={e => setApiKeys({...apiKeys, hubspot: e.target.value})} />
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-[#050505] border border-[#b026ff]/50 rounded-lg p-8 w-full max-w-md shadow-[0_0_40px_rgba(176,38,255,0.2)] relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#00f3ff] to-[#b026ff]"></div>
+              <h2 className="text-xl font-mono text-[#00f3ff] mb-2 tracking-widest">>> AUTH_TOKENS</h2>
+              <p className="text-xs font-mono text-gray-500 mb-6">Local override protocol active. Data encrypted.</p>
+              <div className="space-y-5">
+                <InputWrapper label="CLAUDE_API_KEY (ANTHROPIC)" value={apiKeys.anthropic} onChange={e => setApiKeys({...apiKeys, anthropic: e.target.value})} type="password" />
+                <InputWrapper label="SERPER_DEV_KEY" value={apiKeys.serper} onChange={e => setApiKeys({...apiKeys, serper: e.target.value})} type="password" />
+                <InputWrapper label="HUBSPOT_UPLINK (OPTIONAL)" value={apiKeys.hubspot} onChange={e => setApiKeys({...apiKeys, hubspot: e.target.value})} type="password" />
               </div>
-              <button onClick={() => setShowSettings(false)} className="mt-6 w-full py-2 bg-[#D4AF37] text-[#0a1128] font-bold rounded hover:bg-[#F3E5AB]">Save & Close</button>
+              <button onClick={() => setShowSettings(false)} className="mt-8 w-full py-3 bg-[#b026ff]/10 border border-[#b026ff] text-[#b026ff] font-mono tracking-widest hover:bg-[#b026ff] hover:text-black hover:shadow-[0_0_20px_#b026ff] transition-all duration-300">
+                INITIATE_SAVE
+              </button>
             </div>
           </div>
         )}
 
         {/* DASHBOARD TAB */}
         {activeTab === 'dashboard' && (
-          <div className="p-10 max-w-4xl mx-auto w-full">
-            <div className="mb-8 text-center">
-              <h2 className="text-3xl font-light mb-2">New Lead Intelligence Request</h2>
-              <p className="text-gray-400">Deploy Scout agent to research, score, and draft outreach.</p>
+          <div className="p-12 max-w-5xl mx-auto w-full flex-1 flex flex-col justify-center">
+            <div className="mb-10">
+              <h2 className="text-4xl font-black tracking-wider text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">INITIALIZE TARGET</h2>
+              <p className="text-sm font-mono text-[#00f3ff] mt-2 tracking-widest">DEPLOYING AUTONOMOUS SCOUT AGENT...</p>
             </div>
 
-            <form onSubmit={handleAnalyze} className="bg-[#162447] rounded-xl p-8 shadow-2xl border border-gray-800">
-              <div className="grid grid-cols-2 gap-6 mb-6">
+            <form onSubmit={handleAnalyze} className="bg-white/[0.02] backdrop-blur-xl rounded-2xl p-10 border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+              <div className="grid grid-cols-2 gap-8 mb-8">
+                <InputWrapper className="col-span-2 sm:col-span-1" label="TARGET ENTITY (BUSINESS NAME)" value={leadForm.name} onChange={e => setLeadForm({...leadForm, name: e.target.value})} />
+                <InputWrapper className="col-span-2 sm:col-span-1" label="GEOLOCATION (CITY, ST)" value={leadForm.location} onChange={e => setLeadForm({...leadForm, location: e.target.value})} />
+                <InputWrapper className="col-span-2 sm:col-span-1" label="NODE ADDRESS (URL - OPTIONAL)" value={leadForm.website} onChange={e => setLeadForm({...leadForm, website: e.target.value})} type="url" />
+                
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-xs uppercase tracking-wider text-gray-400 mb-2">Business Name *</label>
-                  <input required type="text" className="w-full bg-[#0a1128] border border-gray-700 rounded-lg p-3 text-white focus:border-[#D4AF37] outline-none" value={leadForm.name} onChange={e => setLeadForm({...leadForm, name: e.target.value})} />
-                </div>
-                <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-xs uppercase tracking-wider text-gray-400 mb-2">Location *</label>
-                  <input required type="text" placeholder="e.g. Miami, FL" className="w-full bg-[#0a1128] border border-gray-700 rounded-lg p-3 text-white focus:border-[#D4AF37] outline-none" value={leadForm.location} onChange={e => setLeadForm({...leadForm, location: e.target.value})} />
-                </div>
-                <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-xs uppercase tracking-wider text-gray-400 mb-2">Website URL (Optional)</label>
-                  <input type="url" className="w-full bg-[#0a1128] border border-gray-700 rounded-lg p-3 text-white focus:border-[#D4AF37] outline-none" value={leadForm.website} onChange={e => setLeadForm({...leadForm, website: e.target.value})} />
-                </div>
-                <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-xs uppercase tracking-wider text-gray-400 mb-2">Industry</label>
-                  <select className="w-full bg-[#0a1128] border border-gray-700 rounded-lg p-3 text-white focus:border-[#D4AF37] outline-none" value={leadForm.industry} onChange={e => setLeadForm({...leadForm, industry: e.target.value})}>
+                  <label className="block text-[10px] font-mono uppercase tracking-[0.2em] text-[#b026ff] mb-2">SECTOR (INDUSTRY)</label>
+                  <select className="w-full bg-[#050510] border border-[#00f3ff]/30 rounded p-4 text-[#00f3ff] font-mono focus:border-[#00f3ff] focus:shadow-[0_0_15px_rgba(0,243,255,0.3)] outline-none transition-all appearance-none" value={leadForm.industry} onChange={e => setLeadForm({...leadForm, industry: e.target.value})}>
                     <option>Real Estate</option>
                     <option>Home Services / Trades</option>
                     <option>Medical / MedSpa</option>
@@ -221,13 +207,14 @@ export default function ScoutApp() {
               </div>
 
               {isAnalyzing ? (
-                <div className="mt-8 flex flex-col items-center p-6 border border-[#D4AF37]/30 bg-[#0a1128] rounded-lg">
-                  <Loader2 className="animate-spin text-[#D4AF37] mb-4" size={32} />
-                  <p className="text-[#D4AF37] font-medium animate-pulse">{loadingStep}</p>
+                <div className="mt-8 flex flex-col items-center p-8 bg-[#00f3ff]/5 border border-[#00f3ff]/30 rounded-xl relative overflow-hidden">
+                  <div className="absolute top-0 left-[-100%] w-[200%] h-1 bg-gradient-to-r from-transparent via-[#00f3ff] to-transparent animate-[scan_2s_linear_infinite]"></div>
+                  <Loader2 className="animate-spin text-[#00f3ff] mb-4 drop-shadow-[0_0_10px_#00f3ff]" size={40} />
+                  <p className="text-[#00f3ff] font-mono text-sm tracking-[0.2em] animate-pulse">{loadingStep}</p>
                 </div>
               ) : (
-                <button type="submit" className="w-full py-4 bg-[#D4AF37] text-[#0a1128] font-bold text-lg rounded-lg hover:bg-[#F3E5AB] transition-colors flex items-center justify-center space-x-2">
-                  <Search size={20} /> <span>Deploy Scout Agent</span>
+                <button type="submit" className="w-full py-5 bg-[#00f3ff]/10 border border-[#00f3ff] text-[#00f3ff] font-mono text-lg font-bold tracking-[0.3em] rounded hover:bg-[#00f3ff] hover:text-black hover:shadow-[0_0_30px_rgba(0,243,255,0.6)] transition-all duration-300 flex items-center justify-center space-x-3">
+                  <Crosshair size={24} /> <span>EXECUTE SCAN</span>
                 </button>
               )}
             </form>
@@ -236,65 +223,67 @@ export default function ScoutApp() {
 
         {/* REPORT TAB */}
         {activeTab === 'report' && reportData && (
-          <div className="flex-1 flex flex-col h-full bg-[#0a1128]">
+          <div className="flex-1 flex flex-col h-full bg-transparent">
             {/* Report Header */}
-            <div className="bg-[#162447] p-6 border-b border-gray-800 flex justify-between items-center shrink-0">
+            <div className="bg-black/60 backdrop-blur-xl p-8 border-b border-[#b026ff]/30 flex justify-between items-center shrink-0 shadow-[0_4px_20px_rgba(176,38,255,0.1)]">
               <div>
-                <h2 className="text-2xl font-bold text-white">{leadForm.name}</h2>
-                <p className="text-[#D4AF37] text-sm tracking-wide">{leadForm.location} • {leadForm.industry}</p>
+                <h2 className="text-3xl font-black text-white tracking-wide">{leadForm.name}</h2>
+                <p className="text-[#00f3ff] font-mono text-sm tracking-widest mt-1">[{leadForm.location}] // {leadForm.industry}</p>
               </div>
-              <div className="flex space-x-3">
-                <button onClick={exportToPDF} className="px-4 py-2 border border-[#D4AF37] text-[#D4AF37] rounded hover:bg-[#D4AF37] hover:text-[#0a1128] flex items-center space-x-2 text-sm">
-                  <Download size={16} /> <span>Export PDF</span>
+              <div className="flex space-x-4">
+                <button onClick={exportToPDF} className="px-5 py-2.5 bg-black/50 border border-[#00f3ff] text-[#00f3ff] font-mono text-sm tracking-widest hover:bg-[#00f3ff] hover:text-black hover:shadow-[0_0_15px_#00f3ff] transition-all flex items-center space-x-2">
+                  <Download size={16} /> <span>DECRYPT_PDF</span>
                 </button>
-                <button onClick={pushToHubSpot} className="px-4 py-2 bg-[#ff7a59] text-white rounded hover:bg-[#ff8f73] flex items-center space-x-2 text-sm font-medium">
-                  <Database size={16} /> <span>Push to CRM</span>
+                <button onClick={pushToHubSpot} className="px-5 py-2.5 bg-[#b026ff]/20 border border-[#b026ff] text-[#b026ff] font-mono text-sm tracking-widest hover:bg-[#b026ff] hover:text-black hover:shadow-[0_0_15px_#b026ff] transition-all flex items-center space-x-2">
+                  <Database size={16} /> <span>SYNC_CRM</span>
                 </button>
               </div>
             </div>
 
             {/* Report Content Area */}
             <div className="flex-1 flex overflow-hidden">
-              {/* Report Navigation */}
-              <div className="w-48 bg-[#0a1128] border-r border-gray-800 flex flex-col p-2 space-y-1 overflow-y-auto">
-                <ReportNavBtn icon={BarChart} label="Scores" active={reportTab==='overview'} onClick={()=>setReportTab('overview')} />
-                <ReportNavBtn icon={Crosshair} label="Competitors" active={reportTab==='competitors'} onClick={()=>setReportTab('competitors')} />
-                <ReportNavBtn icon={Target} label="Recommendations" active={reportTab==='recommendations'} onClick={()=>setReportTab('recommendations')} />
-                <ReportNavBtn icon={Mail} label="Outreach Scripts" active={reportTab==='outreach'} onClick={()=>setReportTab('outreach')} />
+              {/* Report Navigation (Vertical Tabs) */}
+              <div className="w-64 bg-black/40 backdrop-blur-md border-r border-white/5 flex flex-col p-4 space-y-2 overflow-y-auto">
+                <ReportNavBtn icon={BarChart} label="DIAGNOSTICS" active={reportTab==='overview'} onClick={()=>setReportTab('overview')} />
+                <ReportNavBtn icon={Crosshair} label="RIVAL_MATRIX" active={reportTab==='competitors'} onClick={()=>setReportTab('competitors')} />
+                <ReportNavBtn icon={Zap} label="UPGRADE_PATH" active={reportTab==='recommendations'} onClick={()=>setReportTab('recommendations')} />
+                <ReportNavBtn icon={Terminal} label="COMMS_LINK" active={reportTab==='outreach'} onClick={()=>setReportTab('outreach')} />
               </div>
 
               {/* Report Detail View */}
-              <div id="report-content" className="flex-1 p-8 overflow-y-auto bg-[#0a1128]">
+              <div id="report-content" className="flex-1 p-10 overflow-y-auto">
                 
-                {/* LNL Branding Header for PDF Export */}
-                <div className="hidden print:block border-b-2 border-[#D4AF37] pb-6 mb-8">
-                  <h1 className="text-3xl font-bold" style={{ color: THEME.navy }}>LNL AI Agency</h1>
-                  <h2 className="text-xl text-gray-500 mt-2">Intelligence Brief: {leadForm.name}</h2>
+                {/* Print Branding (Hidden in UI) */}
+                <div className="hidden print:block border-b-2 border-black pb-6 mb-8 bg-white text-black">
+                  <h1 className="text-4xl font-black">LNL AI NEURAL_NET</h1>
+                  <h2 className="text-xl mt-2 font-mono text-gray-600">TARGET ACQUISITION BRIEF: {leadForm.name}</h2>
                 </div>
 
                 {reportTab === 'overview' && (
-                  <div className="space-y-6">
-                    <h3 className="text-xl font-medium border-b border-gray-800 pb-2 text-[#D4AF37]">Intelligence Scoring</h3>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      <ScoreCard title="Website Audit" icon={Globe} score={reportData.scores.website} details={reportData.insights.website} color={getScoreColor(reportData.scores.website)} />
-                      <ScoreCard title="SEO & AEO Analysis" icon={Search} score={reportData.scores.seo} details={reportData.insights.seo} color={getScoreColor(reportData.scores.seo)} />
-                      <ScoreCard title="Social Presence" icon={Share2} score={reportData.scores.socialMedia} details={reportData.insights.socialMedia} color={getScoreColor(reportData.scores.socialMedia)} />
-                      <ScoreCard title="Reputation & Reviews" icon={Star} score={reportData.scores.reputation} details={reportData.insights.reputation} color={getScoreColor(reportData.scores.reputation)} />
-                      <ScoreCard title="Automation Opportunity" icon={Cpu} score={reportData.scores.automation} details={reportData.insights.automation} color={getScoreColor(reportData.scores.automation)} />
+                  <div className="space-y-6 max-w-6xl">
+                    <h3 className="text-xl font-mono tracking-[0.2em] text-[#b026ff] border-b border-[#b026ff]/30 pb-3 mb-6">>> VULNERABILITY DIAGNOSTICS</h3>
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                      <CyberScoreCard title="NODE_INTERFACE (WEB)" icon={Globe} score={reportData.scores.website} details={reportData.insights.website} color={getScoreColor(reportData.scores.website)} />
+                      <CyberScoreCard title="ALGORITHM_RANK (SEO/AEO)" icon={Search} score={reportData.scores.seo} details={reportData.insights.seo} color={getScoreColor(reportData.scores.seo)} />
+                      <CyberScoreCard title="SOCIAL_MATRIX" icon={Share2} score={reportData.scores.socialMedia} details={reportData.insights.socialMedia} color={getScoreColor(reportData.scores.socialMedia)} />
+                      <CyberScoreCard title="PUBLIC_TRUST" icon={Star} score={reportData.scores.reputation} details={reportData.insights.reputation} color={getScoreColor(reportData.scores.reputation)} />
+                      <CyberScoreCard title="AUTOMATION_DEFICIT" icon={Cpu} score={reportData.scores.automation} details={reportData.insights.automation} color={getScoreColor(reportData.scores.automation)} />
                     </div>
                   </div>
                 )}
 
                 {reportTab === 'competitors' && (
-                  <div className="space-y-6">
-                    <h3 className="text-xl font-medium border-b border-gray-800 pb-2 text-[#D4AF37]">Competitive Gap Analysis</h3>
-                    <div className="bg-[#162447] rounded-xl p-6 border border-gray-800">
-                      <p className="text-gray-300 mb-6 leading-relaxed">{reportData.competitorGapText}</p>
-                      <h4 className="font-semibold text-white mb-4">Top 3 Competitors Identified:</h4>
-                      <ul className="space-y-3">
+                  <div className="space-y-6 max-w-4xl">
+                    <h3 className="text-xl font-mono tracking-[0.2em] text-[#b026ff] border-b border-[#b026ff]/30 pb-3 mb-6">>> RIVAL MATRIX ANALYSIS</h3>
+                    <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-8 relative overflow-hidden shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-[#ff003c] rounded-full mix-blend-screen filter blur-[80px] opacity-20"></div>
+                      <p className="text-gray-300 mb-8 leading-relaxed font-light text-lg">{reportData.competitorGapText}</p>
+                      <h4 className="font-mono text-[#ff003c] mb-5 tracking-widest text-sm">DETECTED THREATS (LOCAL RIVALS):</h4>
+                      <ul className="space-y-4">
                         {reportData.competitors.map((comp, idx) => (
-                          <li key={idx} className="flex items-center space-x-3 text-gray-300 bg-[#0a1128] p-3 rounded">
-                            <ChevronRight size={16} className="text-[#D4AF37]" /> <span>{comp}</span>
+                          <li key={idx} className="flex items-center space-x-4 text-white bg-black/60 border border-white/5 p-4 rounded backdrop-blur-sm">
+                            <span className="text-[#ff003c] font-mono">0{idx+1}</span>
+                            <span className="font-medium tracking-wide">{comp}</span>
                           </li>
                         ))}
                       </ul>
@@ -303,26 +292,27 @@ export default function ScoutApp() {
                 )}
 
                 {reportTab === 'recommendations' && (
-                  <div className="space-y-6">
-                    <h3 className="text-xl font-medium border-b border-gray-800 pb-2 text-[#D4AF37]">Prioritized Services & Offer</h3>
+                  <div className="space-y-6 max-w-4xl">
+                    <h3 className="text-xl font-mono tracking-[0.2em] text-[#b026ff] border-b border-[#b026ff]/30 pb-3 mb-6">>> OPTIMAL UPGRADE VECTOR</h3>
                     
-                    {/* Free Trial Offer Box */}
-                    <div className="bg-gradient-to-r from-[#D4AF37]/20 to-transparent border border-[#D4AF37]/50 rounded-xl p-6 mb-8">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <Star className="text-[#D4AF37]" size={20} />
-                        <h4 className="font-bold text-[#D4AF37] uppercase tracking-wide text-sm">Recommended Lead Offer</h4>
+                    {/* Neon Offer Box */}
+                    <div className="bg-[#39ff14]/5 border border-[#39ff14]/50 rounded-xl p-8 mb-10 relative overflow-hidden shadow-[0_0_20px_rgba(57,255,20,0.15)]">
+                      <div className="absolute top-0 left-0 w-2 h-full bg-[#39ff14] shadow-[0_0_15px_#39ff14]"></div>
+                      <div className="flex items-center space-x-3 mb-3 pl-4">
+                        <Star className="text-[#39ff14]" size={20} />
+                        <h4 className="font-mono text-[#39ff14] uppercase tracking-[0.2em] text-sm">TROJAN DEPLOYMENT OFFER</h4>
                       </div>
-                      <p className="text-xl text-white font-medium">{reportData.finalOffer}</p>
-                      <p className="text-sm text-gray-400 mt-2">Attach this as proof-of-performance in the outreach hook.</p>
+                      <p className="text-2xl text-white font-bold pl-4 drop-shadow-md">{reportData.finalOffer}</p>
+                      <p className="text-sm text-[#39ff14]/70 mt-3 font-mono pl-4">Deploy this free-value hook in primary comms sequence.</p>
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="space-y-5">
                       {reportData.recommendations.map((rec, idx) => (
-                        <div key={idx} className="bg-[#162447] p-5 rounded-lg border border-gray-800 flex items-start space-x-4">
-                          <div className="bg-[#0a1128] p-2 rounded text-[#D4AF37] font-bold">{idx + 1}</div>
+                        <div key={idx} className="bg-white/5 backdrop-blur-md p-6 rounded-lg border border-white/10 flex items-start space-x-5 hover:border-[#00f3ff]/40 transition-colors">
+                          <div className="bg-[#00f3ff]/20 px-3 py-1 rounded text-[#00f3ff] font-mono text-lg font-bold border border-[#00f3ff]/30 shadow-[0_0_10px_rgba(0,243,255,0.2)]">0{idx + 1}</div>
                           <div>
-                            <h4 className="text-lg font-semibold text-white">{rec.service}</h4>
-                            <p className="text-gray-400 text-sm mt-1">{rec.reason}</p>
+                            <h4 className="text-xl font-semibold text-white tracking-wide">{rec.service}</h4>
+                            <p className="text-gray-400 text-base mt-2 leading-relaxed">{rec.reason}</p>
                           </div>
                         </div>
                       ))}
@@ -331,28 +321,28 @@ export default function ScoutApp() {
                 )}
 
                 {reportTab === 'outreach' && (
-                  <div className="space-y-8 print:space-y-4">
-                    <h3 className="text-xl font-medium border-b border-gray-800 pb-2 text-[#D4AF37]">LNL Agency Outreach Sequence</h3>
+                  <div className="space-y-10 max-w-4xl print:text-black">
+                    <h3 className="text-xl font-mono tracking-[0.2em] text-[#b026ff] border-b border-[#b026ff]/30 pb-3 mb-6 print:text-black">>> LNL AUTONOMOUS COMMS</h3>
                     
-                    <EmailEditor 
-                      title="Email 1: The Hook (Day 1)" 
+                    <CyberEmailEditor 
+                      title="TX_01: INFILTRATION (HOOK)" 
                       value={emailScripts.hook} 
                       onChange={(val) => setEmailScripts({...emailScripts, hook: val})} 
-                      instructions="Leads with specific research observation. Attaches the free trial offer. Subject creates curiosity."
+                      color="cyan"
                     />
                     
-                    <EmailEditor 
-                      title="Email 2: The Follow Up (Day 4)" 
+                    <CyberEmailEditor 
+                      title="TX_02: VALUE_INJECT (DAY 04)" 
                       value={emailScripts.followup} 
                       onChange={(val) => setEmailScripts({...emailScripts, followup: val})} 
-                      instructions="Adds value from competitive gap analysis. Soft CTA."
+                      color="purple"
                     />
 
-                    <EmailEditor 
-                      title="Email 3: The Close (Day 8)" 
+                    <CyberEmailEditor 
+                      title="TX_03: EXTRACTION (DAY 08)" 
                       value={emailScripts.close} 
                       onChange={(val) => setEmailScripts({...emailScripts, close: val})} 
-                      instructions="Acknowledges they are busy. Restates core value. Easy yes (15 min call or view deliverable)."
+                      color="green"
                     />
                   </div>
                 )}
@@ -361,19 +351,32 @@ export default function ScoutApp() {
           </div>
         )}
       </div>
+      
+      {/* Inline Keyframes for specific animations */}
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes scan { 0% { transform: translateX(0); } 100% { transform: translateX(100%); } }
+        .print-mode-active * { color: #000 !important; background: transparent !important; border-color: #ccc !important; box-shadow: none !important; filter: none !important; }
+      `}} />
     </div>
   );
 }
 
-// --- SUBCOMPONENTS ---
+// --- CYBERPUNK SUBCOMPONENTS ---
+
+const InputWrapper = ({ label, value, onChange, type="text", className="" }) => (
+  <div className={className}>
+    <label className="block text-[10px] font-mono uppercase tracking-[0.2em] text-[#b026ff] mb-2">{label}</label>
+    <input required type={type} className="w-full bg-[#050510] border border-[#00f3ff]/30 rounded p-4 text-[#00f3ff] font-mono focus:border-[#00f3ff] focus:shadow-[0_0_15px_rgba(0,243,255,0.3)] outline-none transition-all placeholder:text-[#00f3ff]/20" value={value} onChange={onChange} />
+  </div>
+);
 
 const SidebarBtn = ({ icon: Icon, label, active, onClick, disabled }) => (
   <button 
     onClick={onClick} 
     disabled={disabled}
-    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors text-sm font-medium ${
-      disabled ? 'opacity-50 cursor-not-allowed text-gray-500' :
-      active ? 'bg-[#D4AF37] text-[#0a1128]' : 'text-gray-300 hover:bg-[#0a1128]'
+    className={`w-full flex items-center space-x-4 px-5 py-4 rounded transition-all font-mono tracking-widest text-sm ${
+      disabled ? 'opacity-30 cursor-not-allowed text-gray-500' :
+      active ? 'bg-[linear-gradient(90deg,rgba(0,243,255,0.2)_0%,transparent_100%)] border-l-2 border-[#00f3ff] text-[#00f3ff] shadow-[inset_10px_0_20px_rgba(0,243,255,0.05)]' : 'text-gray-400 hover:text-white hover:bg-white/5 border-l-2 border-transparent'
     }`}
   >
     <Icon size={18} /> <span>{label}</span>
@@ -381,145 +384,105 @@ const SidebarBtn = ({ icon: Icon, label, active, onClick, disabled }) => (
 );
 
 const ReportNavBtn = ({ icon: Icon, label, active, onClick }) => (
-  <button onClick={onClick} className={`w-full flex items-center space-x-3 px-3 py-3 rounded text-sm text-left ${active ? 'bg-[#162447] text-[#D4AF37] border-l-2 border-[#D4AF37]' : 'text-gray-400 hover:text-white hover:bg-[#162447]'}`}>
+  <button onClick={onClick} className={`w-full flex items-center space-x-4 px-4 py-4 rounded font-mono text-sm tracking-widest text-left transition-all ${
+    active ? 'bg-[#b026ff]/20 text-[#b026ff] border border-[#b026ff]/50 shadow-[0_0_15px_rgba(176,38,255,0.2)]' : 'text-gray-500 hover:text-gray-200 hover:bg-white/5 border border-transparent'
+  }`}>
     <Icon size={16} /> <span>{label}</span>
   </button>
 );
 
-const ScoreCard = ({ title, icon: Icon, score, details, color }) => (
-  <div className="bg-[#162447] rounded-xl p-5 border border-gray-800">
-    <div className="flex justify-between items-start mb-4">
-      <div className="flex items-center space-x-2">
-        <Icon size={18} className="text-gray-400" />
-        <h4 className="font-semibold text-white">{title}</h4>
+const CyberScoreCard = ({ title, icon: Icon, score, details, color }) => (
+  <div className="bg-white/[0.02] backdrop-blur-xl rounded-xl p-6 border border-white/10 hover:border-white/20 transition-all shadow-[0_8px_30px_rgba(0,0,0,0.5)] group relative overflow-hidden">
+    <div className="absolute top-0 right-0 w-16 h-16 rounded-full mix-blend-screen filter blur-[40px] opacity-20 transition-all duration-500 group-hover:opacity-40" style={{ backgroundColor: color }}></div>
+    <div className="flex justify-between items-start mb-6">
+      <div className="flex items-center space-x-3">
+        <Icon size={20} className="text-gray-400 group-hover:text-white transition-colors" />
+        <h4 className="font-mono text-white tracking-widest text-sm">{title}</h4>
       </div>
-      <div className="flex items-center space-x-2">
-        <span className="text-2xl font-bold" style={{ color }}>{score}</span><span className="text-gray-500 text-sm">/10</span>
+      <div className="flex items-end space-x-1 font-mono">
+        <span className="text-3xl font-black drop-shadow-[0_0_8px_currentColor]" style={{ color }}>{score}</span>
+        <span className="text-gray-600 mb-1">/10</span>
       </div>
     </div>
-    <div className="w-full bg-gray-800 rounded-full h-1.5 mb-4">
-      <div className="h-1.5 rounded-full" style={{ width: `${score * 10}%`, backgroundColor: color }}></div>
+    <div className="w-full bg-black border border-white/10 rounded-full h-2 mb-5 relative overflow-hidden">
+      <div className="h-full relative shadow-[0_0_10px_currentColor]" style={{ width: `${score * 10}%`, backgroundColor: color }}>
+        <div className="absolute inset-0 bg-white/30 w-full h-full animate-pulse"></div>
+      </div>
     </div>
-    <p className="text-sm text-gray-400 leading-relaxed">{details}</p>
+    <p className="text-sm text-gray-400 leading-relaxed font-light">{details}</p>
   </div>
 );
 
-const EmailEditor = ({ title, value, onChange, instructions }) => (
-  <div className="bg-[#162447] border border-gray-800 rounded-xl overflow-hidden print:border-none print:bg-transparent">
-    <div className="bg-[#0a1128] px-4 py-3 border-b border-gray-800 flex justify-between items-center print:hidden">
-      <h4 className="font-semibold text-white">{title}</h4>
-      <span className="text-xs text-gray-500 max-w-xs text-right">{instructions}</span>
-    </div>
-    <div className="hidden print:block mb-2 font-bold text-lg text-[#D4AF37]">{title}</div>
-    <textarea 
-      className="w-full h-48 bg-transparent p-4 text-gray-200 outline-none resize-y print:h-auto print:text-black"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    />
-  </div>
-);
-
-// --- API SERVICES ---
-
-async function fetchSerperData(name, location) {
-  return {
-    query: `${name} in ${location}`,
-    competitors:['Local Competitor A', 'Top Ranking Competitor B', 'National Chain C'],
-    summary: `Found basic presence for ${name}, but outranked locally by 3 major competitors.`
+const CyberEmailEditor = ({ title, value, onChange, color }) => {
+  const colorMap = {
+    cyan: 'border-[#00f3ff]/30 text-[#00f3ff]',
+    purple: 'border-[#b026ff]/30 text-[#b026ff]',
+    green: 'border-[#39ff14]/30 text-[#39ff14]',
   };
-}
+  
+  return (
+    <div className="bg-black/60 backdrop-blur-lg border border-white/10 rounded-xl overflow-hidden print:border-none print:bg-transparent shadow-[0_0_30px_rgba(0,0,0,0.4)]">
+      <div className="bg-[#050510] px-5 py-4 border-b border-white/10 flex items-center space-x-3 print:hidden">
+        <Terminal size={16} className={colorMap[color].split(' ')[1]} />
+        <h4 className={`font-mono text-sm tracking-[0.2em] ${colorMap[color].split(' ')[1]}`}>{title}</h4>
+      </div>
+      <textarea 
+        className="w-full h-56 bg-transparent p-6 text-gray-300 outline-none resize-y print:h-auto print:text-black font-sans leading-relaxed selection:bg-gray-700 focus:bg-white/[0.02] transition-colors"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </div>
+  );
+};
+
+// --- MOCK API DATA SERVICES ---
+async function fetchSerperData(name, location) { return { query: `${name} in ${location}`, competitors:['Local Rival Alpha', 'Prime Node Beta', 'Legacy Corp Gamma'] }; }
 
 async function fetchAnthropicAnalysis(lead, serperData, apiKey) {
   const MODEL = "claude-sonnet-4-20250514";
-  
-  const systemPrompt = `You are the lead intelligence engine for "Scout", an AI marketing consultant tool used by Lainie, founder of LNL AI Agency.
-LNL AI Agency tone is confident, consultative, and luxury-adjacent (never salesy, never desperate). 
-Given the lead details, generate a strict JSON object evaluating them.
-
+  const systemPrompt = `You are the lead intelligence engine for "Scout", an AI marketing consultant tool used by Lainie, founder of LNL AI Agency. LNL AI Agency tone is confident, consultative, and luxury-adjacent (never salesy, never desperate). 
 REQUIRED JSON FORMAT:
 {
-  "scores": {
-    "website": 1-10, "seo": 1-10, "socialMedia": 1-10, "reputation": 1-10, "automation": 1-10
-  },
-  "insights": {
-    "website": "Specific observation...",
-    "seo": "Specific observation...",
-    "socialMedia": "Specific observation...",
-    "reputation": "Specific observation...",
-    "automation": "Business process gap identified..."
-  },
+  "scores": { "website": 1-10, "seo": 1-10, "socialMedia": 1-10, "reputation": 1-10, "automation": 1-10 },
+  "insights": { "website": "...", "seo": "...", "socialMedia": "...", "reputation": "...", "automation": "..." },
   "competitorGapText": "Actionable text explaining where they fall behind top 3 competitors.",
   "competitors":["Comp 1", "Comp 2", "Comp 3"],
-  "recommendations":[
-    { "service": "Service Name from approved list", "reason": "Specific 1-sentence why based on data" }
-  ],
-  "emails": {
-    "hook": "Subject: ...\\n\\nBody of email 1 (Lead with specific observation, attach free trial, soft CTA)",
-    "followup": "Body of email 2 (Day 4: add competitor gap insight)",
-    "close": "Body of email 3 (Day 8: acknowledge busy, easy yes)"
-  }
-}
-
-Approved Services List: Branded Social Media Content Package, Website (Basic), Website + Chatbot, AI Assistant - Advanced, SEO/GEO/AEO Optimization, Google Business Profile Management, Email Marketing Automation, Reputation Management.
-Ensure outputs are specific to the lead's industry and name.`;
-
-  const userPrompt = `Analyze this lead:
-Name: ${lead.name}
-Location: ${lead.location}
-Website: ${lead.website || 'No website provided'}
-Industry: ${lead.industry}
-Search Data Context: ${JSON.stringify(serperData)}
-
-Generate the JSON report.`;
+  "recommendations":[ { "service": "Service Name", "reason": "Specific 1-sentence why" } ],
+  "emails": { "hook": "Subject... Body...", "followup": "Body...", "close": "Body..." }
+}`;
+  const userPrompt = `Analyze: ${lead.name}, ${lead.location}, ${lead.website || 'N/A'}, ${lead.industry}`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-        'anthropic-dangerously-allow-browser': 'true'
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 3000,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userPrompt }]
-      })
+      headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', 'anthropic-dangerously-allow-browser': 'true' },
+      body: JSON.stringify({ model: MODEL, max_tokens: 3000, system: systemPrompt, messages: [{ role: 'user', content: userPrompt }] })
     });
-
     if (!response.ok) throw new Error("Anthropic API Error");
-    
     const data = await response.json();
-    const jsonStr = data.content[0].text.substring(
-      data.content[0].text.indexOf('{'),
-      data.content[0].text.lastIndexOf('}') + 1
-    );
+    const jsonStr = data.content[0].text.substring(data.content[0].text.indexOf('{'), data.content[0].text.lastIndexOf('}') + 1);
     return JSON.parse(jsonStr);
-
   } catch (error) {
-    console.warn("API Failed, returning fallback mock data for UI visualization.", error);
     return {
       scores: { website: 4, seo: 3, socialMedia: 6, reputation: 5, automation: 8 },
       insights: {
-        website: "Website load speed is slow and lacks clear mobile responsive design. No lead capture form visible above the fold.",
-        seo: "Missing from AI Overviews (AEO). High keyword gap in local intent searches compared to top tier competitors.",
-        socialMedia: "Active on Instagram but posting sporadically. Content lacks unified brand aesthetic. No direct link to booking.",
-        reputation: "GBP is claimed but has only 12 reviews (3.8 avg). Owner is not responding to recent negative feedback.",
-        automation: `High volume of repetitive inquiries typical for ${lead.industry} (hours, quotes, availability) are handled manually. Massive opportunity for a conversational AI agent.`
+        website: "Node latency detected. Mobile interface fractured. No clear data-capture portal.",
+        seo: "Algorithm invisibility. Local search vectors dominated by rival entities.",
+        socialMedia: "Signal output sporadic. Visual aesthetic misaligned with core brand parameters.",
+        reputation: "Public trust metrics vulnerable. Active negative feedback loops ignored.",
+        automation: `High manual load for ${lead.industry} operations. Critical need for autonomous agent deployment.`
       },
-      competitorGapText: `Competitors in the ${lead.location} area are leveraging automated booking and dynamic AI search presence. ${lead.name} is entirely absent from these touchpoints, bleeding high-intent local traffic to competitors who answer instantly.`,
-      competitors:[`Elite ${lead.industry} Group`, `Premier ${lead.location} Services`, "National Standard Co."],
+      competitorGapText: `Rival nodes in ${lead.location} are leveraging instant AI response protocols. ${lead.name} is bleeding traffic due to analog processing delays.`,
+      competitors:[`Cyber ${lead.industry} Syndicate`, `Neon ${lead.location} Group`, "Global Standard Co."],
       recommendations:[
-        { service: "AI Assistant - Advanced", reason: `Your ${lead.industry} competitors are booking instantly; an AI agent will qualify your leads 24/7 without manual effort.` },
-        { service: "SEO / GEO / AEO Optimization", reason: "You are currently invisible when locals ask ChatGPT or Google AI for recommendations in your area." },
-        { service: "Website + Chatbot", reason: "Your current mobile experience is causing friction, leading to dropped conversions before they even contact you." }
+        { service: "AI Agent Deployment", reason: "Automate lead qualification natively, running 24/7." },
+        { service: "Neural SEO Grid", reason: "Re-establish local search dominance across AI platforms." },
+        { service: "Web Node Upgrade", reason: "Modernize interface to reduce bounce rate friction." }
       ],
       emails: {
-        hook: `Subject: Quick thought on your local search visibility\n\nHi there,\n\nLainie here from LNL AI Agency. I was doing some local market research in ${lead.location} and noticed ${lead.name} isn't showing up when people ask AI search tools for ${lead.industry} recommendations. \n\nI built a quick, custom AI Agent demo for your site just to show you what it looks like to capture those lost leads instantly. \n\nMind if I send over the link so you can play around with it?`,
-        followup: `Hi again,\n\nJust a quick follow up to my previous note. While looking at your top local competitors, I noticed they are heavily leveraging automated booking. By implementing a simple conversational agent, we typically see a 30% increase in qualified appointments for businesses like yours.\n\nLet me know if you want to take a look at the custom demo I prepared for you.`,
-        close: `Hi,\n\nI know you're incredibly busy running ${lead.name}, so this will be my last note. \n\nMy goal is simply to help you stop losing high-intent traffic to competitors who answer faster. If you'd ever like to see how we automate lead capture without sounding robotic, here is my direct calendar link for a 15-minute chat: [Link]\n\nBest,\nLainie\nFounder, LNL AI Agency`
+        hook: `Subject: Quick thought on your local visibility\n\nHi there,\n\nLainie here from LNL AI Agency. I was analyzing the local market in ${lead.location} and noticed ${lead.name} is missing from AI search engine results...\n\n[Free Offer Demo Link attached]`,
+        followup: `Hi again,\n\nFollowing up on my previous note. Your rivals are heavily leveraging automated booking. Let's fix that.`,
+        close: `Final note. I know you're busy running ${lead.name}. Let me know if you want to chat later.\n\nBest,\nLainie`
       }
     };
   }
