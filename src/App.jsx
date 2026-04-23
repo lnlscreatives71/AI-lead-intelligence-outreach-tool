@@ -166,7 +166,7 @@ export default function ScoutApp() {
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-[#050505] border border-[#b026ff]/50 rounded-lg p-8 w-full max-w-md shadow-[0_0_40px_rgba(176,38,255,0.2)] relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#00f3ff] to-[#b026ff]"></div>
-              <h2 className="text-xl font-mono text-[#00f3ff] mb-2 tracking-widest">>> AUTH_TOKENS</h2>
+              <h2 className="text-xl font-mono text-[#00f3ff] mb-2 tracking-widest">&gt;&gt; AUTH_TOKENS</h2>
               <p className="text-xs font-mono text-gray-500 mb-6">Local override protocol active. Data encrypted.</p>
               <div className="space-y-5">
                 <InputWrapper label="CLAUDE_API_KEY (ANTHROPIC)" value={apiKeys.anthropic} onChange={e => setApiKeys({...apiKeys, anthropic: e.target.value})} type="password" />
@@ -261,7 +261,7 @@ export default function ScoutApp() {
 
                 {reportTab === 'overview' && (
                   <div className="space-y-6 max-w-6xl">
-                    <h3 className="text-xl font-mono tracking-[0.2em] text-[#b026ff] border-b border-[#b026ff]/30 pb-3 mb-6">>> VULNERABILITY DIAGNOSTICS</h3>
+                    <h3 className="text-xl font-mono tracking-[0.2em] text-[#b026ff] border-b border-[#b026ff]/30 pb-3 mb-6">&gt;&gt; VULNERABILITY DIAGNOSTICS</h3>
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                       <CyberScoreCard title="NODE_INTERFACE (WEB)" icon={Globe} score={reportData.scores.website} details={reportData.insights.website} color={getScoreColor(reportData.scores.website)} />
                       <CyberScoreCard title="ALGORITHM_RANK (SEO/AEO)" icon={Search} score={reportData.scores.seo} details={reportData.insights.seo} color={getScoreColor(reportData.scores.seo)} />
@@ -274,7 +274,7 @@ export default function ScoutApp() {
 
                 {reportTab === 'competitors' && (
                   <div className="space-y-6 max-w-4xl">
-                    <h3 className="text-xl font-mono tracking-[0.2em] text-[#b026ff] border-b border-[#b026ff]/30 pb-3 mb-6">>> RIVAL MATRIX ANALYSIS</h3>
+                    <h3 className="text-xl font-mono tracking-[0.2em] text-[#b026ff] border-b border-[#b026ff]/30 pb-3 mb-6">&gt;&gt; RIVAL MATRIX ANALYSIS</h3>
                     <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-8 relative overflow-hidden shadow-[0_0_30px_rgba(0,0,0,0.5)]">
                       <div className="absolute top-0 right-0 w-32 h-32 bg-[#ff003c] rounded-full mix-blend-screen filter blur-[80px] opacity-20"></div>
                       <p className="text-gray-300 mb-8 leading-relaxed font-light text-lg">{reportData.competitorGapText}</p>
@@ -293,7 +293,7 @@ export default function ScoutApp() {
 
                 {reportTab === 'recommendations' && (
                   <div className="space-y-6 max-w-4xl">
-                    <h3 className="text-xl font-mono tracking-[0.2em] text-[#b026ff] border-b border-[#b026ff]/30 pb-3 mb-6">>> OPTIMAL UPGRADE VECTOR</h3>
+                    <h3 className="text-xl font-mono tracking-[0.2em] text-[#b026ff] border-b border-[#b026ff]/30 pb-3 mb-6">&gt;&gt; OPTIMAL UPGRADE VECTOR</h3>
                     
                     {/* Neon Offer Box */}
                     <div className="bg-[#39ff14]/5 border border-[#39ff14]/50 rounded-xl p-8 mb-10 relative overflow-hidden shadow-[0_0_20px_rgba(57,255,20,0.15)]">
@@ -322,7 +322,7 @@ export default function ScoutApp() {
 
                 {reportTab === 'outreach' && (
                   <div className="space-y-10 max-w-4xl print:text-black">
-                    <h3 className="text-xl font-mono tracking-[0.2em] text-[#b026ff] border-b border-[#b026ff]/30 pb-3 mb-6 print:text-black">>> LNL AUTONOMOUS COMMS</h3>
+                    <h3 className="text-xl font-mono tracking-[0.2em] text-[#b026ff] border-b border-[#b026ff]/30 pb-3 mb-6 print:text-black">&gt;&gt; LNL AUTONOMOUS COMMS</h3>
                     
                     <CyberEmailEditor 
                       title="TX_01: INFILTRATION (HOOK)" 
